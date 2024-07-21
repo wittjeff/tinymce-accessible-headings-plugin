@@ -28,7 +28,7 @@ const setup = (editor: Editor, url: string): void => {
 
       const dialogConfig = (isFirst: boolean, isLast: boolean): any => ({
         title: 'Headings',
-        size: 'normal' as 'normal',
+        size: 'normal',
         body: {
           type: 'panel',
           items: [
@@ -80,6 +80,7 @@ const setup = (editor: Editor, url: string): void => {
           isLastHeading: isLast
         },
         onChange: (api: any, details: any) => {
+          
           // Handle changes in the input fields if necessary
         },
         onAction: (api: any, details: any) => {
@@ -100,7 +101,25 @@ const setup = (editor: Editor, url: string): void => {
         onSubmit: (api: any) => {
           const data = api.getData();
           headings[currentIndex].level = parseInt(data.level, 10);
-          applyHeadingLevels(editor, headings);
+          const current_changed_Heading = headings[currentIndex].level;
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, 'text/html');
+          const heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+          let h1Count = 0;
+          heading.forEach(headingg => {
+          if (headingg.tagName.toLowerCase() === 'h1') {
+            h1Count++;
+          }
+          });
+
+          if(h1Count === 1 && current_changed_Heading === 1)
+          {
+            display_H1_Message(editor);
+          }
+          else{
+            applyHeadingLevels(editor, headings);
+          }
+          
           api.close();
         }
       });
@@ -116,26 +135,13 @@ const setup = (editor: Editor, url: string): void => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
     const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
-
-    let h1Count = 0;
     let contentChanged = false;
     headings.forEach(heading => {
-      if (heading.tagName.toLowerCase() === 'h1') {
-        h1Count++;
-      }
       if (!heading.id) {
         heading.id = generateUniqueId();
         contentChanged = true;
       }
     });
-
-    if (h1Count > 1) {
-      editor.notificationManager.open({
-        text: 'Only one Heading 1 can exist at a time.',
-        type: 'error',
-        timeout: 3000
-      });
-    }
 
     if (contentChanged) {
       editor.undoManager.transact(() => {
@@ -145,6 +151,7 @@ const setup = (editor: Editor, url: string): void => {
     }
   });
 };
+
 
 // Extract headings and their levels from the content using id
 const extractHeadings = (content: string) => {
@@ -171,12 +178,22 @@ const applyHeadingLevels = (editor: Editor, headings: any[]) => {
     const newTag = `h${heading.level}`;
     const oldTag = heading.tag;
     const id = heading.id;
-    const regex = new RegExp(`(<${oldTag}[^>]*id="${id}"[^>]*>)(.*?)(<\/${oldTag}>)`, 'gi');
+    const regex = new RegExp(`(<${oldTag}[^>]*id="${id}"[^>]*>)(.*)(</${oldTag}>)`, 'gi');
+
     content = content.replace(regex, `<${newTag} id="${id}">$2</${newTag}>`);
   });
 
   editor.setContent(content);
 };
+
+function display_H1_Message(editor)
+{
+    editor.notificationManager.open({
+      text: 'Only one Heading 1 can exist at a time.',
+      type: 'error',
+      timeout: 3000
+    });
+}
 
 export default (): void => {
   tinymce.PluginManager.add('headings-test', setup);
