@@ -8,7 +8,7 @@ const generateUniqueId = (() => {
   return () => `heading-${++counter}`;
 })();
 
-const setup = (editor: Editor, url: string): void => {
+const setup = (editor: Editor): void => {
   editor.ui.registry.addButton('headings-test', {
     text: 'Hx',
     tooltip: 'Adjust heading semantic levels',
@@ -79,7 +79,7 @@ const setup = (editor: Editor, url: string): void => {
           isFirstHeading: isFirst,
           isLastHeading: isLast
         },
-        onChange: (api: any, details: any) => {
+        onChange: () => {
           
           // Handle changes in the input fields if necessary
         },
@@ -104,22 +104,32 @@ const setup = (editor: Editor, url: string): void => {
           const current_changed_Heading = headings[currentIndex].level;
           const parser = new DOMParser();
           const doc = parser.parseFromString(content, 'text/html');
-          const heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+          const all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+          const headingLevels = Array.from(all_heading).map(heading => parseInt((heading.tagName.match(/h(\d)/i) || [])[1], 10));
+          headingLevels[currentIndex]=current_changed_Heading;
+          console.log(headingLevels);
           let h1Count = 0;
-          heading.forEach(headingg => {
-          if (headingg.tagName.toLowerCase() === 'h1') {
+          all_heading.forEach(heading => {
+          if (heading.tagName.toLowerCase() === 'h1') {
             h1Count++;
           }
           });
-
-          if(h1Count === 1 && current_changed_Heading === 1)
+          
+          if(h1Count === 1 && current_changed_Heading === 1 )
           {
             display_H1_Message(editor);
+          }
+          else if(!headings_inOrder(headingLevels))
+          {
+            editor.notificationManager.open({
+              text: 'Headings are not in increment order',
+              type: 'error',
+              timeout: 3000
+            });
           }
           else{
             applyHeadingLevels(editor, headings);
           }
-          
           api.close();
         }
       });
@@ -130,7 +140,7 @@ const setup = (editor: Editor, url: string): void => {
   });
 
   // Attach NodeChange event listener with better handling
-  editor.on('NodeChange', (e) => {
+  editor.on('NodeChange', () => {
     const content = editor.getContent({ format: 'html' });
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
@@ -151,7 +161,6 @@ const setup = (editor: Editor, url: string): void => {
     }
   });
 };
-
 
 // Extract headings and their levels from the content using id
 const extractHeadings = (content: string) => {
@@ -193,6 +202,17 @@ function display_H1_Message(editor)
       type: 'error',
       timeout: 3000
     });
+}
+
+function headings_inOrder(headingLevels)
+{
+  console.log(headingLevels);
+  for (let i = 1; i < headingLevels.length; i++) {
+    if (headingLevels[i] < headingLevels[i - 1]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export default (): void => {

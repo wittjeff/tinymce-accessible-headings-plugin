@@ -7,7 +7,7 @@
         return 'heading-'.concat(++counter);
       };
     }();
-    var setup = function (editor, url) {
+    var setup = function (editor) {
       editor.ui.registry.addButton('headings-test', {
         text: 'Hx',
         tooltip: 'Adjust heading semantic levels',
@@ -77,7 +77,7 @@
                 isFirstHeading: isFirst,
                 isLastHeading: isLast
               },
-              onChange: function (api, details) {
+              onChange: function () {
               },
               onAction: function (api, details) {
                 if (details.name === 'next') {
@@ -100,15 +100,26 @@
                 var current_changed_Heading = headings[currentIndex].level;
                 var parser = new DOMParser();
                 var doc = parser.parseFromString(content, 'text/html');
-                var heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+                var all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+                var headingLevels = Array.from(all_heading).map(function (heading) {
+                  return parseInt((heading.tagName.match(/h(\d)/i) || [])[1], 10);
+                });
+                headingLevels[currentIndex] = current_changed_Heading;
+                console.log(headingLevels);
                 var h1Count = 0;
-                heading.forEach(function (headingg) {
-                  if (headingg.tagName.toLowerCase() === 'h1') {
+                all_heading.forEach(function (heading) {
+                  if (heading.tagName.toLowerCase() === 'h1') {
                     h1Count++;
                   }
                 });
                 if (h1Count === 1 && current_changed_Heading === 1) {
                   display_H1_Message(editor);
+                } else if (!headings_inOrder(headingLevels)) {
+                  editor.notificationManager.open({
+                    text: 'Headings are not in increment order',
+                    type: 'error',
+                    timeout: 3000
+                  });
                 } else {
                   applyHeadingLevels(editor, headings);
                 }
@@ -120,7 +131,7 @@
           updateDialogContent(dialogApi);
         }
       });
-      editor.on('NodeChange', function (e) {
+      editor.on('NodeChange', function () {
         var content = editor.getContent({ format: 'html' });
         var parser = new DOMParser();
         var doc = parser.parseFromString(content, 'text/html');
@@ -176,6 +187,15 @@
         type: 'error',
         timeout: 3000
       });
+    }
+    function headings_inOrder(headingLevels) {
+      console.log(headingLevels);
+      for (var i = 1; i < headingLevels.length; i++) {
+        if (headingLevels[i] < headingLevels[i - 1]) {
+          return false;
+        }
+      }
+      return true;
     }
     function Plugin () {
       tinymce.PluginManager.add('headings-test', setup);
