@@ -102,9 +102,7 @@ const setup = (editor: Editor): void => {
           const data = api.getData();
           headings[currentIndex].level = parseInt(data.level, 10);
           const current_changed_Heading = headings[currentIndex].level;
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(content, 'text/html');
-          const all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+          const { all_heading } = getEditorHeadings(editor);
           const headingLevels = Array.from(all_heading).map(heading => parseInt((heading.tagName.match(/h(\d)/i) || [])[1], 10));
           headingLevels[currentIndex]=current_changed_Heading;
           console.log(headingLevels);
@@ -114,18 +112,17 @@ const setup = (editor: Editor): void => {
             h1Count++;
           }
           });
-          
-          if(h1Count === 1 && current_changed_Heading === 1 )
+          if(current_changed_Heading<1 || current_changed_Heading>6)
           {
-            display_H1_Message(editor);
+            display_Error_Message(editor,'Choose a heading tag between 1-6');
+          }
+          else if(h1Count === 1 && current_changed_Heading === 1 )
+          {
+            display_Error_Message(editor,'Only one Heading 1 can exist at a time.');
           }
           else if(!headings_inOrder(headingLevels))
           {
-            editor.notificationManager.open({
-              text: 'Headings are not in increment order',
-              type: 'error',
-              timeout: 3000
-            });
+            display_Error_Message(editor,'Headings are not in increment order');
           }
           else{
             applyHeadingLevels(editor, headings);
@@ -141,12 +138,9 @@ const setup = (editor: Editor): void => {
 
   // Attach NodeChange event listener with better handling
   editor.on('NodeChange', () => {
-    const content = editor.getContent({ format: 'html' });
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(content, 'text/html');
-    const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+    const { doc,all_heading } = getEditorHeadings(editor,true);
     let contentChanged = false;
-    headings.forEach(heading => {
+    all_heading.forEach(heading => {
       if (!heading.id) {
         heading.id = generateUniqueId();
         contentChanged = true;
@@ -195,10 +189,10 @@ const applyHeadingLevels = (editor: Editor, headings: any[]) => {
   editor.setContent(content);
 };
 
-function display_H1_Message(editor)
+function display_Error_Message(editor,message)
 {
     editor.notificationManager.open({
-      text: 'Only one Heading 1 can exist at a time.',
+      text: message,
       type: 'error',
       timeout: 3000
     });
@@ -206,13 +200,25 @@ function display_H1_Message(editor)
 
 function headings_inOrder(headingLevels)
 {
-  console.log(headingLevels);
   for (let i = 1; i < headingLevels.length; i++) {
     if (headingLevels[i] < headingLevels[i - 1]) {
       return false;
     }
   }
   return true;
+}
+
+function getEditorHeadings(editor, includeDoc = false) {
+  const content = editor.getContent({ format: 'html' });
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, 'text/html');
+  const all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+  
+  if (includeDoc) {
+    return { doc, all_heading };
+  } else {
+    return { all_heading };
+  }
 }
 
 export default (): void => {

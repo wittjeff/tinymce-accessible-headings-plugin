@@ -98,9 +98,7 @@
                 var data = api.getData();
                 headings[currentIndex].level = parseInt(data.level, 10);
                 var current_changed_Heading = headings[currentIndex].level;
-                var parser = new DOMParser();
-                var doc = parser.parseFromString(content, 'text/html');
-                var all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+                var all_heading = getEditorHeadings(editor).all_heading;
                 var headingLevels = Array.from(all_heading).map(function (heading) {
                   return parseInt((heading.tagName.match(/h(\d)/i) || [])[1], 10);
                 });
@@ -112,14 +110,12 @@
                     h1Count++;
                   }
                 });
-                if (h1Count === 1 && current_changed_Heading === 1) {
-                  display_H1_Message(editor);
+                if (current_changed_Heading < 1 || current_changed_Heading > 6) {
+                  display_Error_Message(editor, 'Choose a heading tag between 1-6');
+                } else if (h1Count === 1 && current_changed_Heading === 1) {
+                  display_Error_Message(editor, 'Only one Heading 1 can exist at a time.');
                 } else if (!headings_inOrder(headingLevels)) {
-                  editor.notificationManager.open({
-                    text: 'Headings are not in increment order',
-                    type: 'error',
-                    timeout: 3000
-                  });
+                  display_Error_Message(editor, 'Headings are not in increment order');
                 } else {
                   applyHeadingLevels(editor, headings);
                 }
@@ -132,12 +128,9 @@
         }
       });
       editor.on('NodeChange', function () {
-        var content = editor.getContent({ format: 'html' });
-        var parser = new DOMParser();
-        var doc = parser.parseFromString(content, 'text/html');
-        var headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+        var _a = getEditorHeadings(editor, true), doc = _a.doc, all_heading = _a.all_heading;
         var contentChanged = false;
-        headings.forEach(function (heading) {
+        all_heading.forEach(function (heading) {
           if (!heading.id) {
             heading.id = generateUniqueId();
             contentChanged = true;
@@ -181,21 +174,37 @@
       });
       editor.setContent(content);
     };
-    function display_H1_Message(editor) {
+    function display_Error_Message(editor, message) {
       editor.notificationManager.open({
-        text: 'Only one Heading 1 can exist at a time.',
+        text: message,
         type: 'error',
         timeout: 3000
       });
     }
     function headings_inOrder(headingLevels) {
-      console.log(headingLevels);
       for (var i = 1; i < headingLevels.length; i++) {
         if (headingLevels[i] < headingLevels[i - 1]) {
           return false;
         }
       }
       return true;
+    }
+    function getEditorHeadings(editor, includeDoc) {
+      if (includeDoc === void 0) {
+        includeDoc = false;
+      }
+      var content = editor.getContent({ format: 'html' });
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(content, 'text/html');
+      var all_heading = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]');
+      if (includeDoc) {
+        return {
+          doc: doc,
+          all_heading: all_heading
+        };
+      } else {
+        return { all_heading: all_heading };
+      }
     }
     function Plugin () {
       tinymce.PluginManager.add('headings-test', setup);
