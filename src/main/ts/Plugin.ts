@@ -9,7 +9,7 @@ const generateUniqueId = (() => {
 })();
 
 const setup = (editor: Editor): void => {
-  editor.ui.registry.addButton('headings-test', {
+  editor.ui.registry.addButton('a11y-headings', {
     text: 'Hx',
     tooltip: 'Adjust heading semantic levels',
     onAction: () => {
@@ -222,5 +222,5 @@ function getEditorHeadings(editor, includeDoc = false) {
 }
 
 export default (): void => {
-  tinymce.PluginManager.add('headings-test', setup);
+  tinymce.PluginManager.add('a11y-headings', setup);
 };

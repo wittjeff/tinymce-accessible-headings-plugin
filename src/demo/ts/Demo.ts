@@ -8,6 +8,6 @@ Plugin();
 
 tinymce.init({
   selector: 'textarea.tinymce',
-  plugins: 'code headings-test',
-  toolbar: 'headings-test'
+  plugins: 'code a11y-headings',
+  toolbar: 'a11y-headings'
 });

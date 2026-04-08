@@ -100,8 +100,8 @@ __webpack_require__.r(__webpack_exports__);
 Object(_main_ts_Plugin__WEBPACK_IMPORTED_MODULE_0__["default"])();
 tinymce.init({
     selector: 'textarea.tinymce',
-    plugins: 'code headings-test',
-    toolbar: 'headings-test'
+    plugins: 'code a11y-headings',
+    toolbar: 'a11y-headings'
 });
 
 
@@ -122,7 +122,7 @@ var generateUniqueId = (function () {
     return function () { return "heading-".concat(++counter); };
 })();
 var setup = function (editor) {
-    editor.ui.registry.addButton('headings-test', {
+    editor.ui.registry.addButton('a11y-headings', {
         text: 'Hx',
         tooltip: 'Adjust heading semantic levels',
         onAction: function () {
@@ -316,7 +316,7 @@ function getEditorHeadings(editor, includeDoc) {
     }
 }
 /* harmony default export */ __webpack_exports__["default"] = (function () {
-    tinymce.PluginManager.add('headings-test', setup);
+    tinymce.PluginManager.add('a11y-headings', setup);
 });
 
 
